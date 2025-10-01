@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{--mood: linear-gradient(135deg, #4facfe, #00f2fe);--accent: rgba(255,255,255,0.15)}
+
+    body{font-family:'Poppins',sans-serif;background:var(--mood);background-size:400% 400%;animation:bgShift 12s ease infinite;min-height:100vh;margin:0;display:flex;justify-content:center;align-items:center;transition:background 1s ease;overflow:hidden}
+
+    .weather-app{background:var(--accent);backdrop-filter:blur(10px);border-radius:20px;padding:30px;max-width:420px;width:92%;box-shadow:0 8px 25px rgba(0,0,0,0.22);color:#fff;text-align:center;position:relative;overflow:visible}
+
+    h1{font-size:28px;margin-bottom:12px}
+
+    .search-box{display:flex;margin-bottom:18px}
+    .search-box input{flex:1;padding:12px;border:none;border-radius:10px 0 0 10px;font-size:16px}
+    .search-box button{padding:12px 20px;border:none;border-radius:0 10px 10px 0;background:#ff9800;color:#fff;font-weight:700;cursor:pointer;transition:transform .18s ease,background .25s}
+    .search-box button:hover{transform:translateY(-2px);background:#e68900}
+
+    .weather-info{margin-top:14px}
+
+    .weather-icon{font-size:64px;display:block;margin:6px 0;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.25));transform-origin:center}
+
+    .temp{font-size:48px;font-weight:700;letter-spacing:-1px;transition:transform 600ms cubic-bezier(.2,.9,.2,1)}
+    .description{font-size:20px;margin:8px 0;text-transform:capitalize}
+
+    .extra{margin-top:12px;display:flex;justify-content:space-around}
+    .extra div{background:rgba(255,255,255,0.18);border-radius:10px;padding:10px;font-size:14px;flex:1;margin:0 6px}
+
+    /* entrance */
+    .fade-in{opacity:0;transform:translateY(8px);transition:opacity .45s ease,transform .45s cubic-bezier(.2,.9,.2,1)}
+    .visible{opacity:1;transform:translateY(0)}
+
+    /* background animation */
+    @keyframes bgShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+    /* sun/cloud motion */
+    @keyframes sunPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+    @keyframes cloudMove{0%{transform:translateX(-8px)}50%{transform:translateX(8px)}100%{transform:translateX(-8px)}}
+
+    /* rain/snow drop */
+    .rain-drop{position:absolute;left:50%;top:0;width:2px;height:12px;background:rgba(255,255,255,0.8);border-radius:2px;animation:fall 800ms linear infinite}
+    @keyframes fall{0%{transform:translateY(-12vh);opacity:0}30%{opacity:1}100%{transform:translateY(110vh);opacity:0}}
+
+    /* moods controlling gradient */
+    body.clear{--mood:linear-gradient(135deg,#FFD26F,#FF9A5B)}
+    body.clouds{--mood:linear-gradient(135deg,#9FB0C9,#6F8BA8)}
+    body.rain{--mood:linear-gradient(135deg,#3A6EA5,#1B3A6B)}
+    body.snow{--mood:linear-gradient(135deg,#D6F0FF,#9BD3FF)}
+    body.thunderstorm{--mood:linear-gradient(135deg,#4B3B6B,#2B243C)}
+    body.mist{--mood:linear-gradient(135deg,#BFC5C8,#9DA3A6)}
+
+    body.clear .weather-icon{animation:sunPulse 3s ease-in-out infinite}
+    body.clouds .weather-icon{animation:cloudMove 6s ease-in-out infinite}
+  </style>
+</head>
+<body>
+  <div class="weather-app">
+    <h1>Weather Dashboard</h1>
+    <div class="search-box">
+      <input type="text" id="city-input" placeholder="Enter city name">
+      <button onclick="getWeather()">Search</button>
+    </div>
+
+    <div id="weather" class="weather-info">
+      <p>Enter a city to see weather 🌍</p>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "dc7c5357ae98dfa039a80f7aa8a43506";
+    let lastTemp = null;
+
+    const moodMap = {
+      clear: {class: 'clear', icon: '☀️'},
+      clouds: {class: 'clouds', icon: '☁️'},
+      rain: {class: 'rain', icon: '🌧️'},
+      drizzle: {class: 'rain', icon: '🌦️'},
+      thunderstorm: {class: 'thunderstorm', icon: '🌩️'},
+      snow: {class: 'snow', icon: '❄️'},
+      mist: {class: 'mist', icon: '🌫️'},
+      smoke: {class: 'mist', icon: '💨'},
+      haze: {class: 'mist', icon: '🌫️'},
+      fog: {class: 'mist', icon: '🌫️'}
+    };
+
+    async function getWeather(){
+      const city = document.getElementById('city-input').value.trim();
+      if(!city){alert('Please enter a city name');return}
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+      try{
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('City not found');
+        const data = await res.json();
+        showWeather(data);
+      }catch(err){
+        document.getElementById('weather').innerHTML = `<p style="color:#ffcccc;">⚠️ ${err.message}</p>`;
+        cleanupWeatherParticles();
+        document.body.className = '';
+      }
+    }
+
+    function showWeather(data){
+      const weatherDiv = document.getElementById('weather');
+      const main = (data.weather && data.weather[0] && data.weather[0].main) ? data.weather[0].main.toLowerCase() : 'clear';
+      const mood = moodMap[main] || moodMap['clear'];
+
+      document.body.className = '';
+      if(mood && mood.class) document.body.classList.add(mood.class);
+
+      weatherDiv.innerHTML = `
+        <div class="weather-icon" id="weather-icon">${mood.icon || '🌤️'}</div>
+        <div class="temp fade-in" id="temp">${Math.round(data.main.temp)}°C</div>
+        <div class="description fade-in" id="desc">${data.weather[0].description}</div>
+        <div class="extra fade-in">
+          <div>🌡️ Feels Like: ${Math.round(data.main.feels_like)}°C</div>
+          <div>💧 Humidity: ${data.main.humidity}%</div>
+          <div>🌬️ Wind: ${data.wind.speed} m/s</div>
+        </div>
+      `;
+
+      requestAnimationFrame(()=>{document.querySelectorAll('.fade-in').forEach(el=>el.classList.add('visible'))});
+
+      const target = Math.round(data.main.temp);
+      animateTemp(target);
+
+      cleanupWeatherParticles();
+      if(mood.class === 'rain') createRainParticles(18);
+      if(mood.class === 'snow') createSnowParticles(22);
+    }
+
+    function animateTemp(target){
+      const el = document.getElementById('temp'); if(!el) return;
+      const start = (lastTemp === null) ? target : lastTemp; const duration = 700; const startTime = performance.now();
+      function step(now){
+        const t = Math.min(1,(now-startTime)/duration);
+        const eased = t<.5 ? 2*t*t : -1 + (4-2*t)*t;
+        const value = Math.round(start + (target-start)*eased);
+        el.textContent = value + '°C';
+        if(t < 1) requestAnimationFrame(step); else lastTemp = target;
+      }
+      requestAnimationFrame(step);
+    }
+
+    let particleContainer = null;
+    function createParticleContainer(){
+      if(particleContainer) return particleContainer;
+      particleContainer = document.createElement('div');
+      particleContainer.style.position = 'fixed';
+      particleContainer.style.left = 0; particleContainer.style.top = 0;
+      particleContainer.style.width = '100%'; particleContainer.style.height = '100%';
+      particleContainer.style.pointerEvents = 'none'; particleContainer.style.overflow = 'hidden';
+      document.body.appendChild(particleContainer);
+      return particleContainer;
+    }
+
+    function cleanupWeatherParticles(){ if(particleContainer) particleContainer.innerHTML = ''; }
+
+    function createRainParticles(count){ const container = createParticleContainer(); for(let i=0;i<count;i++){ const d = document.createElement('div'); d.className='rain-drop'; d.style.left = Math.random()*100 + '%'; d.style.top = Math.random()*-20 + 'vh'; d.style.height = (8+Math.random()*14)+'px'; d.style.animationDuration = (600+Math.random()*900)+'ms'; d.style.opacity = 0.5 + Math.random()*0.5; container.appendChild(d); } }
+
+    function createSnowParticles(count){ const container = createParticleContainer(); for(let i=0;i<count;i++){ const s = document.createElement('div'); s.className='rain-drop'; s.style.width = s.style.height = (4+Math.random()*8)+'px'; s.style.left = Math.random()*100 + '%'; s.style.top = Math.random()*-20 + 'vh'; s.style.background = 'rgba(255,255,255,0.95)'; s.style.borderRadius = '50%'; s.style.animationDuration = (2000+Math.random()*2400)+'ms'; s.style.opacity = 0.85; container.appendChild(s); } }
+  </script>
+</body>
+</html>
