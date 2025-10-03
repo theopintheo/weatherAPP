@@ -51,7 +51,7 @@
     </div>
 
     <div id="weather" class="weather-info">
-      <p>Enter a city to see weather 🌍</p>
+      <p>Enter a city to see weather</p>
     </div>
   </div>
 
@@ -59,19 +59,7 @@
     const API_KEY = "dc7c5357ae98dfa039a80f7aa8a43506";
     let lastTemp = null;
 
-    // Simplified mapping: no emojis, no mood classes
-    const moodMap = {
-      clear: {class: ''},
-      clouds: {class: ''},
-      rain: {class: ''},
-      drizzle: {class: ''},
-      thunderstorm: {class: ''},
-      snow: {class: ''},
-      mist: {class: ''},
-      smoke: {class: ''},
-      haze: {class: ''},
-      fog: {class: ''}
-    };
+    // No mood mapping required in neutral UI
 
     async function getWeather(){
       const city = document.getElementById('city-input').value.trim();
@@ -83,18 +71,13 @@
         const data = await res.json();
         showWeather(data);
       }catch(err){
-        document.getElementById('weather').innerHTML = `<p style="color:#ffcccc;">⚠️ ${err.message}</p>`;
-        cleanupWeatherParticles();
-        document.body.className = '';
+        document.getElementById('weather').innerHTML = `<p style="color:#ffcccc;">Error: ${err.message}</p>`;
       }
     }
 
     function showWeather(data){
       const weatherDiv = document.getElementById('weather');
-      const main = (data.weather && data.weather[0] && data.weather[0].main) ? data.weather[0].main.toLowerCase() : 'clear';
-      const mood = moodMap[main] || moodMap['clear'];
-
-      // Neutral UI without emojis or mood-specific classes
+  // Neutral UI (no mood classes or emojis)
       weatherDiv.innerHTML = `
         <div class="weather-icon" id="weather-icon"></div>
         <div class="temp fade-in" id="temp">${Math.round(data.main.temp)}°C</div>
@@ -111,8 +94,7 @@
       const target = Math.round(data.main.temp);
       animateTemp(target);
 
-  // particles and mood backgrounds removed for a neutral UI
-  cleanupWeatherParticles();
+      // neutral mode: no particles or mood classes
     }
 
     function animateTemp(target){
@@ -128,8 +110,7 @@
       requestAnimationFrame(step);
     }
 
-    // Particle effects removed — neutral, simplified UI
-    function cleanupWeatherParticles(){ /* no-op in neutral mode */ }
+  // Particle effects removed — no cleanup function required
   </script>
 </body>
 </html>
