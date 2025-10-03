@@ -7,17 +7,38 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 
   <style>
-    :root{--accent: rgba(255,255,255,0.15)}
+    :root{
+      --bg-1: #0f172a;
+      --bg-2: #0b1220;
+      --accent: rgba(255,255,255,0.12);
+      --text: #e6eef8;
+    }
 
-      body{font-family:'Poppins',sans-serif;background: linear-gradient(135deg,#0f172a,#0b1220);min-height:100vh;margin:0;display:flex;justify-content:center;align-items:center;transition:background 300ms ease;overflow:hidden;color:#e6eef8}
+    body{
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+      color: var(--text);
+      background: radial-gradient(circle at 12% 10%, rgba(255,255,255,0.03), transparent 18%), linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background 400ms ease, color 200ms ease;
+      overflow: auto;
+    }
 
     .weather-app{background:var(--accent);backdrop-filter:blur(10px);border-radius:20px;padding:30px;max-width:420px;width:92%;box-shadow:0 8px 25px rgba(0,0,0,0.22);color:#fff;text-align:center;position:relative;overflow:visible}
 
     h1{font-size:28px;margin-bottom:12px}
 
     .search-box{display:flex;margin-bottom:18px}
-    .search-box input{flex:1;padding:12px;border:none;border-radius:10px 0 0 10px;font-size:16px}
-    .search-box button{padding:12px 20px;border:none;border-radius:0 10px 10px 0;background:#ff9800;color:#fff;font-weight:700;cursor:pointer;transition:transform .18s ease,background .25s}
+  .search-box input{flex:1;padding:12px;border:none;border-radius:50px 0 0 50px;font-size:16px}
+  .search-box button{padding:12px 20px;border:none;border-radius:0 50px 50px 0;background:#ff9800;color:#fff;font-weight:700;cursor:pointer;transition:transform .18s ease,background .25s}
+  #use-location{border-radius:50px}
     .search-box button:hover{transform:translateY(-2px);background:#e68900}
 
     .weather-info{margin-top:14px}
@@ -37,9 +58,7 @@
   /* small keyframes left for micro-animations */
   @keyframes sunPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
 
-  /* particle effects removed (rain/snow) */
-
-  /* mood classes removed — neutral background in use */
+  /* particle effects and mood classes removed — neutral background in use */
   </style>
 </head>
 <body>
@@ -48,7 +67,10 @@
     <div class="search-box">
       <input type="text" id="city-input" placeholder="Enter city name">
       <button onclick="getWeather()">Search</button>
+      <button id="use-location" onclick="getLocation()" style="margin-left:8px;background:#4caf50">Use my location</button>
     </div>
+
+    <p id="demo" style="margin-top:6px;font-size:13px;opacity:0.9"></p>
 
     <div id="weather" class="weather-info">
       <p>Enter a city to see weather</p>
@@ -58,9 +80,6 @@
   <script>
     const API_KEY = "dc7c5357ae98dfa039a80f7aa8a43506";
     let lastTemp = null;
-
-    // No mood mapping required in neutral UI
-
     async function getWeather(){
       const city = document.getElementById('city-input').value.trim();
       if(!city){alert('Please enter a city name');return}
@@ -77,7 +96,7 @@
 
     function showWeather(data){
       const weatherDiv = document.getElementById('weather');
-  // Neutral UI (no mood classes or emojis)
+
       weatherDiv.innerHTML = `
         <div class="weather-icon" id="weather-icon"></div>
         <div class="temp fade-in" id="temp">${Math.round(data.main.temp)}°C</div>
@@ -94,7 +113,6 @@
       const target = Math.round(data.main.temp);
       animateTemp(target);
 
-      // neutral mode: no particles or mood classes
     }
 
     function animateTemp(target){
@@ -110,7 +128,36 @@
       requestAnimationFrame(step);
     }
 
-  // Particle effects removed — no cleanup function required
+    function getLocation(){
+      const x = document.getElementById('demo');
+      if(!x) return;
+      if(navigator.geolocation){
+        x.textContent = 'Requesting location...';
+        navigator.geolocation.getCurrentPosition(showPosition, (err)=>{ x.textContent = 'Location permission denied or unavailable.' });
+      } else {
+        x.textContent = 'Geolocation is not supported by this browser.';
+      }
+    }
+
+    function showPosition(position){
+      const x = document.getElementById('demo');
+      if(x) x.innerHTML = 'Latitude: ' + position.coords.latitude.toFixed(4) + '<br>Longitude: ' + position.coords.longitude.toFixed(4);
+      // fetch weather by coordinates
+      getWeatherByCoords(position.coords.latitude, position.coords.longitude);
+    }
+
+    async function getWeatherByCoords(lat, lon){
+      try{
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('Unable to fetch weather for your location');
+        const data = await res.json();
+        showWeather(data);
+      }catch(err){
+        const x = document.getElementById('demo'); if(x) x.textContent = 'Failed to fetch weather for your location.';
+      }
+    }
+
   </script>
 </body>
 </html>
