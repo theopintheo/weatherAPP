@@ -43,15 +43,22 @@
 
     .weather-info{margin-top:14px}
 
-    
+    .weather-icon{font-size:64px;display:block;margin:6px 0;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.25));transform-origin:center}
+
     .temp{font-size:48px;font-weight:700;letter-spacing:-1px;transition:transform 600ms cubic-bezier(.2,.9,.2,1)}
     .description{font-size:20px;margin:8px 0;text-transform:capitalize}
 
-   
+    .extra{margin-top:12px;display:flex;justify-content:space-around}
+    .extra div{background:rgba(255,255,255,0.18);border-radius:10px;padding:10px;font-size:14px;flex:1;margin:0 6px}
+
+    /* entrance */
     .fade-in{opacity:0;transform:translateY(8px);transition:opacity .45s ease,transform .45s cubic-bezier(.2,.9,.2,1)}
     .visible{opacity:1;transform:translateY(0)}
 
+  /* small keyframes left for micro-animations */
+  @keyframes sunPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
 
+  /* particle effects and mood classes removed — neutral background in use */
   </style>
 </head>
 <body>
@@ -91,7 +98,7 @@
       const weatherDiv = document.getElementById('weather');
 
       weatherDiv.innerHTML = `
-        
+        <div class="weather-icon" id="weather-icon"></div>
         <div class="temp fade-in" id="temp">${Math.round(data.main.temp)}°C</div>
         <div class="description fade-in" id="desc">${data.weather[0].description}</div>
         <div class="extra fade-in">
@@ -100,7 +107,7 @@
           <div>Wind: ${data.wind.speed} m/s</div>
         </div>
       `;
-
+        localStorage.setItem('lastCity', data.name);
       requestAnimationFrame(()=>{document.querySelectorAll('.fade-in').forEach(el=>el.classList.add('visible'))});
 
       const target = Math.round(data.main.temp);
@@ -108,6 +115,18 @@
 
     }
 
+    function animateTemp(target){
+      const el = document.getElementById('temp'); if(!el) return;
+      const start = (lastTemp === null) ? target : lastTemp; const duration = 700; const startTime = performance.now();
+      function step(now){
+        const t = Math.min(1,(now-startTime)/duration);
+        const eased = t<.5 ? 2*t*t : -1 + (4-2*t)*t;
+        const value = Math.round(start + (target-start)*eased);
+        el.textContent = value + '°C';
+        if(t < 1) requestAnimationFrame(step); else lastTemp = target;
+      }
+      requestAnimationFrame(step);
+    }
 
     function getLocation(){
       const x = document.getElementById('demo');
